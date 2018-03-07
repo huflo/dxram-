@@ -1282,7 +1282,7 @@ public final class SmallObjectHeap implements Importable, Exportable {
         freeSize += leftSize;
 
         // Only merge if right neighbor within valid area (not inside or past free blocks list)
-        if (address + blockSize + SIZE_MARKER_BYTE != m_baseFreeBlockList) {
+        if (p_address + lengthFieldSize + blockSize + SIZE_MARKER_BYTE != m_baseFreeBlockList) {
 
             // Read right part of the marker on the right
             rightMarker = readRightPartOfMarker(p_address + lengthFieldSize + blockSize);
