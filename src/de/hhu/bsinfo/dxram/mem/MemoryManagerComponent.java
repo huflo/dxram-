@@ -234,7 +234,7 @@ public final class MemoryManagerComponent {//<<{
             }
 
             address = m_rawMemory.malloc(p_size);
-            if (address >= 0) {
+            if (address > SmallObjectHeap.INVALID_ADDRESS) {
                 //->chunkID = (long) m_boot.getNodeID() << 48;
                 chunkID = (long) NODE_ID << 48; //<-
                 // register new chunk in cid table
@@ -291,7 +291,7 @@ public final class MemoryManagerComponent {//<<{
             // verify this id is not used
             if (m_cidTable.get(p_chunkId) == 0) {
                 address = m_rawMemory.malloc(p_size);
-                if (address >= 0) {
+                if (address > SmallObjectHeap.INVALID_ADDRESS) {
                     // register new chunk
                     // register new chunk in cid table
                     if (!m_cidTable.set(chunkID, address)) {
@@ -574,7 +574,7 @@ public final class MemoryManagerComponent {//<<{
             // #ifdef STATISTICS
             //->SOP_MALLOC.leave();
             // #endif /* STATISTICS */
-            if (address >= 0) {
+            if (address > SmallObjectHeap.INVALID_ADDRESS) {
                 //->chunkID = ((long) m_boot.getNodeID() << 48) + lid;
                 chunkID = ((long) NODE_ID << 48) + lid;//<-
                 // register new chunk in cid table
