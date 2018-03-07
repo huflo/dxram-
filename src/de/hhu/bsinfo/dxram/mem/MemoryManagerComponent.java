@@ -242,13 +242,15 @@ public final class MemoryManagerComponent {//<<{
                     // on demand allocation of new table failed
                     // free previously created chunk for data to avoid memory leak
                     m_rawMemory.free(address);
-                    throw new OutOfKeyValueStoreMemoryException(getStatus());
+                    chunkID = ChunkID.INVALID_ID;
+                    //throw new OutOfKeyValueStoreMemoryException(getStatus());
                 } else {
                     m_numActiveChunks++;
                     m_totalActiveChunkMemory += p_size;
                 }
             } else {
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                chunkID = ChunkID.INVALID_ID;
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
         } catch (final MemoryRuntimeException e) {
             handleMemDumpOnError(e, false);
@@ -298,14 +300,16 @@ public final class MemoryManagerComponent {//<<{
                         // on demand allocation of new table failed
                         // free previously created chunk for data to avoid memory leak
                         m_rawMemory.free(address);
-                        throw new OutOfKeyValueStoreMemoryException(getStatus());
+                        chunkID = ChunkID.INVALID_ID;
+                        //throw new OutOfKeyValueStoreMemoryException(getStatus());
                     } else {
                         m_numActiveChunks++;
                         m_totalActiveChunkMemory += p_size;
                         chunkID = p_chunkId;
                     }
                 } else {
-                    throw new OutOfKeyValueStoreMemoryException(getStatus());
+                    chunkID = ChunkID.INVALID_ID;
+                    //throw new OutOfKeyValueStoreMemoryException(getStatus());
                 }
             }
 
@@ -382,7 +386,7 @@ public final class MemoryManagerComponent {//<<{
                             m_rawMemory.free(addresses[j]);
                         }
 
-                        throw new OutOfKeyValueStoreMemoryException(getStatus());
+                        //throw new OutOfKeyValueStoreMemoryException(getStatus());
                     } else {
                         m_numActiveChunks++;
                         m_totalActiveChunkMemory += p_sizes[i];
@@ -395,7 +399,7 @@ public final class MemoryManagerComponent {//<<{
                     m_cidTable.putChunkIDForReuse(lids[i]);
                 }
 
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
 
             // #ifdef STATISTICS
@@ -508,7 +512,7 @@ public final class MemoryManagerComponent {//<<{
                             m_rawMemory.free(addresses[j]);
                         }
 
-                        throw new OutOfKeyValueStoreMemoryException(getStatus());
+                        //throw new OutOfKeyValueStoreMemoryException(getStatus());
                     } else {
                         m_numActiveChunks++;
                         m_totalActiveChunkMemory += p_size;
@@ -521,7 +525,7 @@ public final class MemoryManagerComponent {//<<{
                     m_cidTable.putChunkIDForReuse(lids[i]);
                 }
 
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
 
             // #ifdef STATISTICS
@@ -582,8 +586,8 @@ public final class MemoryManagerComponent {//<<{
                     // on demand allocation of new table failed
                     // free previously created chunk for data to avoid memory leak
                     m_rawMemory.free(address);
-
-                    throw new OutOfKeyValueStoreMemoryException(getStatus());
+                    chunkID = ChunkID.INVALID_ID;
+                    //throw new OutOfKeyValueStoreMemoryException(getStatus());
                 } else {
                     m_numActiveChunks++;
                     m_totalActiveChunkMemory += p_size;
@@ -591,8 +595,8 @@ public final class MemoryManagerComponent {//<<{
             } else {
                 // put lid back
                 m_cidTable.putChunkIDForReuse(lid);
-
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                chunkID = ChunkID.INVALID_ID;
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
 
             // #ifdef STATISTICS
@@ -1015,7 +1019,7 @@ public final class MemoryManagerComponent {//<<{
                     m_cidTable.set(p_chunkIDs[i], addresses[i]);
                 }
             } else {
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
 
             // #ifdef STATISTICS
@@ -1075,7 +1079,7 @@ public final class MemoryManagerComponent {//<<{
                     m_cidTable.set(p_dataStructures[i].getID(), addresses[i]);
                 }
             } else {
-                throw new OutOfKeyValueStoreMemoryException(getStatus());
+                //throw new OutOfKeyValueStoreMemoryException(getStatus());
             }
 
             // #ifdef STATISTICS
