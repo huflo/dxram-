@@ -1,0 +1,30 @@
+#build files
+/build/
+
+#vim files
+*~
+*.swp
+*.swo
+
+#java files
+*.jar
+!/lib/*.jar
+*.class
+hs_err*
+
+#intellji files
+*.iml
+.idea/
+out/*
+
+#Log Files
+*.log
+log.txt
+
+#backups
+backup/
+*.backup
+*.bak
+
+#original files
+ORG*.java
