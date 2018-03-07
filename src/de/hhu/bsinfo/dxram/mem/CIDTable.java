@@ -332,7 +332,7 @@ public final class CIDTable {
                 entry = readEntry(addressTable, index);
                 if (entry == 0) {
                     entry = createLIDTable();
-                    if (entry == -1) {
+                    if (entry == SmallObjectHeap.INVALID_ADDRESS) {
                         return false;
                     }
                     writeEntry(addressTable, index, entry);
