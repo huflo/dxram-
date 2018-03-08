@@ -1405,7 +1405,7 @@ public final class MemoryManagerComponent {//<<{
     }
 
     //->@Override
-    protected boolean shutdownComponent() {
+    public boolean shutdownComponent() {
         shutdownMemory();
 
         return true;
