@@ -171,6 +171,7 @@ public class Evaluation {
 
 
         for (int i = 0; i < rounds; i++) {
+            System.out.println(String.format("Round: %d/%d ", i, rounds));
             //cleanup old chunks
             for (int j = 0; j < memoryManager.m_numActiveChunks; j++) {
                 memoryManager.remove(j, false);
@@ -188,7 +189,7 @@ public class Evaluation {
             delta = System.nanoTime()-start;
 
             System.out.println("Time: " + delta);
-            System.out.println(measurementHelper.getStats());
+            measurementHelper.writeStats();
             measurementHelper.newRound();
         }
     }
