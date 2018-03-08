@@ -9,10 +9,10 @@ public class DXRAMMemory {
 
     public static void main(String[] args) throws InterruptedException, IOException {
 
-        if(args.length < 16){
-            System.out.println("Run: nodeID heapSize blockSize nOperations, nThreads, initialChunks, initMinSize, initMaxSize,\n" +
-                    "createProbability, readProbability, changeProbability, minDelayInMS, maxDelay,\n" +
-                    "minSize, maxSizeInByte" );
+        if(args.length < 17){
+            System.out.println("Run: nodeID heapSize blockSize branchName nOperations nThreads initialChunks initMinSize initMaxSize\n" +
+                    "createProbability readProbability changeProbability minDelayInMS maxDelay\n" +
+                    "minSize maxSizeInByte" );
 
             System.exit(-1);
         }
@@ -22,6 +22,7 @@ public class DXRAMMemory {
         long heapSize = Long.parseLong(args[arg++]);
         int blockSize = Integer.parseInt(args[arg++]);
 
+        String branch = args[arg++];
         long rounds = Long.parseLong(args[arg++]);
         long nOperations = Long.parseLong(args[arg++]);
         int nThreads = Integer.parseInt(args[arg++]);
@@ -36,8 +37,8 @@ public class DXRAMMemory {
         int minSize = Integer.parseInt(args[arg++]);
         int maxSizeInByte = Integer.parseInt(args[arg]);
 
-        MemoryManagerComponent memoryManager = new MemoryManagerComponent(nodeID, heapSize, blockSize);
-        Evaluation eval = new Evaluation(memoryManager, "./eval/");
+        MemoryManager memoryManager = new MemoryManager(nodeID, heapSize, blockSize);
+        Evaluation eval = new Evaluation(memoryManager, "./eval/" + branch + "/");
         eval.accessSimulation(rounds, nOperations, nThreads, initialChunks, initMinSize, initMaxSize, createProbability,
                 readProbability,changeProbability, minDelayInMS, maxDelay, minSize, maxSizeInByte);
 
