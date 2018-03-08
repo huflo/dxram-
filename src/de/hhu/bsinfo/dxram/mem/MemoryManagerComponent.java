@@ -72,7 +72,7 @@ public final class MemoryManagerComponent {//<<{
     SmallObjectHeap m_rawMemory;
     CIDTable m_cidTable;
     //private ReentrantReadWriteLock m_lock;
-    private ReentrantLock m_accessLock;
+    private ReentrantReadWriteLock m_accessLock;
     private ReentrantLock m_manageLock;
     //private AtomicInteger m_lock;
     long m_numActiveChunks;
@@ -167,10 +167,14 @@ public final class MemoryManagerComponent {//<<{
     /**
      * Lock the memory for an access task (get).
      */
-    public void lockAccess() {
+    public void lockAccess(boolean readLock) {
         //m_lock.readLock().lock();
+        if(readLock){
+            m_accessLock.readLock().lock();
+        } else {
+            m_accessLock.writeLock().lock();
+        }
 
-        m_accessLock.lock();
         //while (true) {
         //    if(m_lock.get() != 0)
         //        continue;
@@ -196,9 +200,13 @@ public final class MemoryManagerComponent {//<<{
     /**
      * Unlock the memory after an access task (get).
      */
-    public void unlockAccess() {
+    public void unlockAccess(boolean readLock) {
         //m_lock.readLock().unlock();
-        m_accessLock.unlock();
+        if(readLock){
+            m_accessLock.readLock().unlock();
+        } else {
+            m_accessLock.writeLock().unlock();
+        }
 
         //m_lock.decrementAndGet();
     }
@@ -1428,7 +1436,7 @@ public final class MemoryManagerComponent {//<<{
 
         //m_lock = new AtomicInteger(0);
         //m_lock = new ReentrantReadWriteLock(true);
-        m_accessLock = new ReentrantLock(true);
+        m_accessLock = new ReentrantReadWriteLock(true);
         m_manageLock = new ReentrantLock(true);
 
         m_numActiveChunks = 0;
@@ -1506,7 +1514,7 @@ public final class MemoryManagerComponent {//<<{
 
             // ugly: we entered this with a access lock, acquire the managed lock to ensure full blocking of the memory before dumping
             if (p_acquireManageLock) {
-                unlockAccess();
+                unlockAccess(false);
                 lockManage();
             }
 
@@ -1517,7 +1525,7 @@ public final class MemoryManagerComponent {//<<{
 
             if (p_acquireManageLock) {
                 unlockManage();
-                lockAccess();
+                lockAccess(false);
             }
 
             // #if LOGGER == ERROR

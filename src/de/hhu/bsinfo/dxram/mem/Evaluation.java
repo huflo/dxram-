@@ -134,14 +134,16 @@ public class Evaluation {
                     //read data
                     long readStart = System.nanoTime();
                     //memoryManager.lockAccess();
+                    memoryManager.lockAccess(true);
                     byte[] b = memoryManager.get(randomCID);
+                    memoryManager.unlockAccess(true);
                     //memoryManager.unlockAccess();
                     read.addTime(b!=null, readStart);
                 } else {
                     long writeStart = System.nanoTime();
-                    memoryManager.lockAccess();
+                    memoryManager.lockAccess(false);
                     boolean ok = memoryManager.put(randomCID, FastByteUtils.longToBytes(putCounter.getAndIncrement()));
-                    memoryManager.unlockAccess();
+                    memoryManager.unlockAccess(false);
                     write.addTime(ok, writeStart);
                 }
             } else {
@@ -156,9 +158,9 @@ public class Evaluation {
                 } else{
                     long removeStart = System.nanoTime();
                     memoryManager.lockManage();
-                    memoryManager.lockAccess();
+                    memoryManager.lockAccess(false);
                     long s = memoryManager.remove(randomCID, false);
-                    memoryManager.unlockAccess();
+                    memoryManager.unlockAccess(false);
                     memoryManager.unlockManage();
                     remove.addTime(s != -1, removeStart);
                 }
