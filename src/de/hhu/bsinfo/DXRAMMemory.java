@@ -37,7 +37,7 @@ public class DXRAMMemory {
         int minSize = Integer.parseInt(args[arg++]);
         int maxSizeInByte = Integer.parseInt(args[arg]);
 
-        MemoryManager memoryManager = new MemoryManager(nodeID, heapSize, blockSize);
+        MemoryManagerComponent memoryManager = new MemoryManagerComponent(nodeID, heapSize, blockSize);
         Evaluation eval = new Evaluation(memoryManager, "./eval/" + branch + "/");
         eval.accessSimulation(rounds, nOperations, nThreads, initialChunks, initMinSize, initMaxSize, createProbability,
                 readProbability,changeProbability, minDelayInMS, maxDelay, minSize, maxSizeInByte);
