@@ -71,8 +71,7 @@ public final class MemoryManagerComponent {//<<{
     //->private AbstractBootComponent m_boot;
     SmallObjectHeap m_rawMemory;
     CIDTable m_cidTable;
-    //private ReentrantReadWriteLock m_lock;
-    private ReentrantReadWriteLock m_accessLock;
+    private ReentrantReadWriteLock m_lock;
     private ReentrantLock m_manageLock;
     //private AtomicInteger m_lock;
     long m_numActiveChunks;
@@ -83,6 +82,9 @@ public final class MemoryManagerComponent {//<<{
     long MEMORY_SIZE; //<-
     int BLOCK_SIZE;//<-
     String DUMP_FOLDER = "";
+
+    private boolean m_readLock = true;
+    private boolean m_writeLock = true;
 
 
 
@@ -167,13 +169,8 @@ public final class MemoryManagerComponent {//<<{
     /**
      * Lock the memory for an access task (get).
      */
-    public void lockAccess(boolean readLock) {
+    public void lockAccess() {
         //m_lock.readLock().lock();
-        if(readLock){
-            m_accessLock.readLock().lock();
-        } else {
-            m_accessLock.writeLock().lock();
-        }
 
         //while (true) {
         //    if(m_lock.get() != 0)
@@ -200,13 +197,8 @@ public final class MemoryManagerComponent {//<<{
     /**
      * Unlock the memory after an access task (get).
      */
-    public void unlockAccess(boolean readLock) {
+    public void unlockAccess() {
         //m_lock.readLock().unlock();
-        if(readLock){
-            m_accessLock.readLock().unlock();
-        } else {
-            m_accessLock.writeLock().unlock();
-        }
 
         //m_lock.decrementAndGet();
     }
@@ -1435,8 +1427,9 @@ public final class MemoryManagerComponent {//<<{
         m_cidTable.initialize(m_rawMemory);
 
         //m_lock = new AtomicInteger(0);
-        //m_lock = new ReentrantReadWriteLock(true);
-        m_accessLock = new ReentrantReadWriteLock(true);
+
+        m_lock = new ReentrantReadWriteLock(true);
+        //m_accessLock = new ReentrantLock(true);
         m_manageLock = new ReentrantLock(true);
 
         m_numActiveChunks = 0;
@@ -1452,8 +1445,8 @@ public final class MemoryManagerComponent {//<<{
 
         m_cidTable = null;
         m_rawMemory = null;
-        //m_lock = null;
-        m_accessLock = null;
+        m_lock = null;
+        //m_accessLock = null;
         m_manageLock = null;
     }
 
@@ -1514,7 +1507,7 @@ public final class MemoryManagerComponent {//<<{
 
             // ugly: we entered this with a access lock, acquire the managed lock to ensure full blocking of the memory before dumping
             if (p_acquireManageLock) {
-                unlockAccess(false);
+                writeUnlock();
                 lockManage();
             }
 
@@ -1525,7 +1518,7 @@ public final class MemoryManagerComponent {//<<{
 
             if (p_acquireManageLock) {
                 unlockManage();
-                lockAccess(false);
+                writeUnlock();
             }
 
             // #if LOGGER == ERROR
@@ -1749,4 +1742,65 @@ public final class MemoryManagerComponent {//<<{
             return str;
         }
     }
+
+    //Locks-------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Read lock, this lock is switchable, with the method
+     * setLocks.
+     */
+    void readLock(){
+        if(m_readLock)
+            m_lock.readLock().lock();
+        else
+            m_lock.writeLock().lock();
+    }
+
+    /**
+     * Read unlock, this unlock is switchable, with the method
+     * setLocks.
+     */
+    void readUnlock(){
+        if(m_readLock)
+            m_lock.readLock().unlock();
+        else
+            m_lock.writeLock().unlock();
+    }
+
+    /**
+     * Write lock, this lock is switchable, with the method
+     * setLocks.
+     */
+    void writeLock(){
+        if(!m_writeLock)
+            m_lock.readLock().lock();
+        else
+            m_lock.writeLock().lock();
+    }
+
+    /**
+     * Write unlock, this unlock is switchable, with the method
+     * setLocks.
+     */
+    void writeUnlock(){
+        if(!m_writeLock)
+            m_lock.readLock().unlock();
+        else
+            m_lock.writeLock().unlock();
+    }
+
+
+    /**
+     * Determine the type of access lock.
+     *
+     * @param p_readLock
+     *          If true, use a read lock, otherwise use a write lock for read operations
+     * @param p_writeLock
+     *          If true, use a write lock, otherwise use a read lock  for write operations
+     */
+    final void setLocks(final boolean p_readLock, final boolean p_writeLock) {
+        m_readLock = p_readLock;
+        m_writeLock = p_writeLock;
+    }
+
 }
