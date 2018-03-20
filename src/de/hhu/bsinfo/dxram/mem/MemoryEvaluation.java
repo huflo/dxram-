@@ -21,15 +21,35 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Florian Hucke (florian.hucke@hhu.de) on 06.03.18
  */
 @SuppressWarnings("unused")
-public class Evaluation {
-    private static final Logger LOGGER = LogManager.getFormatterLogger(Evaluation.class.getSimpleName());
+public class MemoryEvaluation {
+    private static final Logger LOGGER = LogManager.getFormatterLogger(MemoryEvaluation.class.getSimpleName());
     private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd_-_HH-mm");
 
-    private final MemoryManagerComponent memoryManager;
+    private final MemoryManagerComponent memory;
     private final String resultFolder;
 
-    private final String fileNameExtension;
+    private String fileNameExtension;
     private final char delim = ',';
+
+    private int rounds = 3;
+    private int threads = Runtime.getRuntime().availableProcessors();
+
+    //heap init
+    private final int initialChunks;
+    private final int initMinSize;
+    private final int initMaxSize;
+    private final int[] initSizes;
+
+    //delay init
+    private long minDelay = 0;
+    private long maxDelay = 0;
+
+    //operations init
+    private long operations = (long) Math.pow(10,8);
+
+    //pinning
+    private long[] entries;
+
 
     //Variable for multi threading
     //Prevent Java heap exceptions by too many Runnables
@@ -49,15 +69,29 @@ public class Evaluation {
     /**
      * Constructor
      *
-     * @param p_memoryManager The memory unit
-     * @param p_resultPath The path for  measurement results
+     * @param p_memoryManager
+     *          The memory unit
+     * @param p_resultPath
+     *          The path for  measurement results
+     * @param p_initialChunks
+     *          Number of initial chunks
+     * @param p_initMinSize
+     *          Minimum chunk size at initialization
+     * @param p_initMaxSize
+     *          Maximum chunk size at initialization
      */
-    public Evaluation(final MemoryManagerComponent p_memoryManager, final String p_resultPath,
-                      final boolean readLock, final boolean writeLock) {
-        memoryManager = p_memoryManager;
-        memoryManager.setLocks(readLock, writeLock);
+    public MemoryEvaluation(final MemoryManagerComponent p_memoryManager, final String p_resultPath,
+                            final int p_initialChunks, final int p_initMinSize, final int p_initMaxSize) {
+        memory = p_memoryManager;
 
-        fileNameExtension = String.format("locks: read_%s_-_write_%s", (readLock) ? "r":"w", (writeLock) ? "w":"r" );
+        initialChunks = p_initialChunks;
+        initMinSize = p_initMinSize;
+        initMaxSize = p_initMaxSize;
+
+        initSizes = new int[p_initialChunks];
+        for (int i = 0; i < initSizes.length; i++) {
+            initSizes[i] = (int)getRandom(p_initMinSize, p_initMaxSize);
+        }
 
         String tmpPath =  p_resultPath;
         if(!tmpPath.endsWith("/"))
@@ -68,53 +102,102 @@ public class Evaluation {
         resultFolder = tmpPath;
     }
 
+
+    public void setLocks(final boolean readLock, final boolean writeLock) {
+        memory.setLocks(readLock, writeLock);
+        fileNameExtension = String.format("read_%s_-_write_%s", (readLock) ? "r":"w", (writeLock) ? "w":"r" );
+    }
+
+    /**
+     *
+     * @param p_operations
+     *          Number of operations
+     */
+    public void setOperations(final long p_operations) {
+        operations = p_operations;
+    }
+
+    /**
+     * Set delay between two operations
+     *
+     * @param p_minDelay
+     *          Minimum delay between operations
+     * @param p_maxDelay
+     *          Maximum delay between operations
+     */
+    public void setDelay(long p_minDelay, long p_maxDelay) {
+        minDelay = p_minDelay;
+        maxDelay = p_maxDelay;
+    }
+
+    /**
+     * Set number of test rounds
+     *
+     * @param p_rounds
+     *          Number of test runs
+     */
+    public void setRounds(int p_rounds) {
+        rounds = p_rounds;
+    }
+
+    /**
+     * Set number of threads
+     *
+     * @param p_threads
+     *          Number of threads
+     */
+    public void setThreads(final int p_threads) {
+        threads = p_threads;
+    }
+
+    /**
+     * Init the heap
+     *
+     * @param pinning Is a pinning test?
+     */
+    private void initHeap(final boolean pinning) {
+        final byte[] data = FastByteUtils.longToBytes(0);
+        long cid = 1;
+
+        //delete old chunks
+        while (memory.m_numActiveChunks > 0) {
+            memory.remove(cid++, false);
+        }
+
+        //Create initial chunks
+        for (int i = 0; i < initSizes.length; i++) {
+            cid = memory.create(initSizes[i]);
+            memory.put(cid, data);
+
+        }
+    }
+
     /**
      * Extended memory test to emulate real life access
      *
-     * @param rounds
-     *          Number of test runs
-     * @param nOperations
-     *          Number of operations
-     * @param nThreads
-     *          Number of threads
-     * @param initialChunks
-     *          Number of initial chunks
-     * @param initMinSize
-     *          Minimum chunk size at initialization
-     * @param initMaxSize
-     *          Maximum chunk size at initialization
      * @param createProbability
      *          Probability of chunk creation
      * @param removeProbability
      *          Chunk deletion probability
      * @param writeProbability
      *          Probability of write access to a chunk
-     * @param minDelay
-     *          Minimum delay between operations
-     * @param maxDelay
-     *          Maximum delay between operations
      * @param minSize
      *          Minimum size of a newly created chunk
      * @param maxSize
      *          Maximum size of a newly created chunk
      */
-    public final void accessSimulation(final long rounds, final long nOperations, final int nThreads, final long initialChunks,
-                                       final int initMinSize, final int initMaxSize,
-                                       final double createProbability, final double removeProbability,
-                                       final double writeProbability, final long minDelay, final long maxDelay,
-                                       final int minSize, final int maxSize) {
+    public final void accessSimulation(final double createProbability, final double removeProbability,
+                                       final double writeProbability, final int minSize, final int maxSize) {
 
         double removeLimit = createProbability + removeProbability;
         double writeLimit = removeLimit + writeProbability;
 
-        String baseFilename = String.format("%f_%f_%f", createProbability, removeProbability, writeProbability);
+        String baseFilename = String.format("%2.3f_%2.3f_%2.3f", createProbability, removeProbability, writeProbability);
 
         String desc = String.format("operations: %d, threads: %d, init chunks: %d, inti size: [min: %d ,max: %d], " +
-                "probabilities: [create: %f, remove: %f, read: %f, write: %f], delay:[min: %d, max: %d], size:[min: %d, max:%d]",
-                nOperations, nThreads, initialChunks, initMinSize, initMaxSize, createProbability, removeProbability,
+                "probabilities: [create: %2.3f, remove: %2.3f, read: %2.3f, write: %2.3f], delay:[min: %d, max: %d], size:[min: %d, max:%d]",
+                operations, threads, initialChunks, initMinSize, initMaxSize, createProbability, removeProbability,
                 1-writeLimit, writeProbability, minDelay, maxDelay, minSize, maxSize);
-
-        System.out.println(desc);
 
         //FunctionalInterface for incrementing the value (with a strong consistency)
         //ByteDataManipulation increment = (byte[] oldData) -> FastByteUtils.longToBytes(FastByteUtils.bytesToLong(oldData) + 1);
@@ -139,7 +222,8 @@ public class Evaluation {
         Runnable r = () -> {
             wait(minDelay, maxDelay);
 
-            long randomCID = getRandom(1, memoryManager.getHighestUsedLocalID());
+            long randomCID = getRandom(1, memory.getHighestUsedLocalID());
+
             double selector = Math.random();
             long time;
             boolean ok;
@@ -147,53 +231,42 @@ public class Evaluation {
             if(selector < createProbability) {
                 //create
                 time = SimpleStopwatch.startTime();
-                memoryManager.lockManage();
-                ok = memoryManager.create((int)getRandom(minSize, maxSize)) != ChunkID.INVALID_ID;
-                memoryManager.unlockManage();
+                memory.lockManage();
+                ok = memory.create((int)getRandom(minSize, maxSize)) != ChunkID.INVALID_ID;
+                memory.unlockManage();
                 create.addTime(ok, SimpleStopwatch.stopAndGetDelta(time));
             } else if(createProbability <= selector && selector < removeLimit) {
                 time = SimpleStopwatch.startTime();
-                memoryManager.lockManage();
-                memoryManager.writeLock();
-                ok = memoryManager.remove(randomCID, false) != ChunkID.INVALID_ID;
-                memoryManager.writeUnlock();
-                memoryManager.unlockManage();
+                memory.lockManage();
+                memory.writeLock();
+                ok = memory.remove(randomCID, false) != ChunkID.INVALID_ID;
+                memory.writeUnlock();
+                memory.unlockManage();
                 remove.addTime(ok, SimpleStopwatch.stopAndGetDelta(time));
             } else if(removeLimit <= selector && selector < writeLimit) {
                 time = SimpleStopwatch.startTime();
-                memoryManager.writeLock();
-                ok = memoryManager.put(randomCID, FastByteUtils.longToBytes(putCounter.getAndIncrement()));
-                memoryManager.writeUnlock();
+                memory.writeLock();
+                ok = memory.put(randomCID, FastByteUtils.longToBytes(putCounter.getAndIncrement()));
+                memory.writeUnlock();
                 write.addTime(ok, SimpleStopwatch.stopAndGetDelta(time));
             } else {
                 //read data
                 time = SimpleStopwatch.startTime();
-                memoryManager.readLock();
-                ok = memoryManager.get(randomCID) != null;
-                memoryManager.readUnlock();
+                memory.readLock();
+                ok = memory.get(randomCID) != null;
+                memory.readUnlock();
                 read.addTime(ok, SimpleStopwatch.stopAndGetDelta(time));
             }
         };
 
         for (int i = 0; i < rounds; i++) {
-            //cleanup old chunks
-            for (int j = 0; j < memoryManager.m_numActiveChunks; j++) {
-                memoryManager.remove(j, false);
-            }
+            initHeap(false);
 
-            //Create initial chunks
-            for (int j = 0; j < initialChunks; j++) {
-                cid = memoryManager.create((int) getRandom(initMinSize, initMaxSize));
-                memoryManager.put(cid, data);
-            }
-
-            long start = SimpleStopwatch.startTime();
             try {
-                execNOperationsRunnables(nThreads, nThreads, nOperations, r);
+                execNOperationsRunnables(threads, threads, operations, r);
             } catch (InterruptedException e) {
                 System.err.println("Failed");
             }
-            System.out.println("Time: " + SimpleStopwatch.stopAndGetDelta(start));
 
             try {
                 measurementHelper.writeStats(fileNameExtension, delim);
@@ -204,15 +277,19 @@ public class Evaluation {
         }
     }
 
-
     /**
      * Execute a given Runnable n-times
      *
-     * @param coreThreads The minimal number of threads
-     * @param maxThreads The maximal number of threads
-     * @param operations Number of operations to run
-     * @param runnable The runnable to run n-times
-     * @throws InterruptedException Termination can throw this exception
+     * @param coreThreads
+     *          The minimal number of threads
+     * @param maxThreads
+     *          The maximal number of threads
+     * @param operations
+     *          Number of operations to run
+     * @param runnable
+     *          The runnable to run n-times
+     * @throws InterruptedException
+     *          Termination can throw this exception
      */
     private void execNOperationsRunnables(final int coreThreads, final int maxThreads, final long operations,
                                           final Runnable runnable) throws InterruptedException {
@@ -237,11 +314,16 @@ public class Evaluation {
     /**
      * Execute a runnable in a time window again and again
      *
-     * @param coreThreads The minimal number of threads
-     * @param maxThreads The maximal number of threads
-     * @param maxTime The time to run the Runnables
-     * @param runnable The runnable to run again and again
-     * @throws InterruptedException Termination can throw this exception
+     * @param coreThreads
+     *          The minimal number of threads
+     * @param maxThreads
+     *          The maximal number of threads
+     * @param maxTime
+     *          The time to run the Runnables
+     * @param runnable
+     *          The runnable to run again and again
+     * @throws InterruptedException
+     *          Termination can throw this exception
      */
     private void execMaxTimeRunnables(final int coreThreads, final int maxThreads, final long maxTime,
                                       final Runnable runnable) throws InterruptedException {
@@ -267,22 +349,24 @@ public class Evaluation {
     /**
      * Wait a random time
      *
-     * @param minValue Minimal time to wait
-     * @param maxValue Maximal time to wait
+     * @param minValue
+     *          Minimal time to wait
+     * @param maxValue
+     *          Maximal time to wait
      */
     private void wait(final long minValue, final long maxValue){
         try {
             Thread.sleep(getRandom(minValue, maxValue));
-        } catch (InterruptedException ignored) {
-
-        }
+        } catch (InterruptedException ignored) {}
     }
 
     /**
      * Get a random number in the range [minValue, maxValue]
      *
-     * @param minValue Minimal number
-     * @param maxValue Maximal number
+     * @param minValue
+     *          Minimal number
+     * @param maxValue
+     *          Maximal number
      * @return A random number of [minValue, maxValue]
      */
     private long getRandom(long minValue, long maxValue){
@@ -309,7 +393,8 @@ public class Evaluation {
         /**
          * Get a time delta
          *
-         * @param startTime The start time
+         * @param startTime
+         *          The start time
          * @return Time delta
          */
         static long stopAndGetDelta(long startTime){
