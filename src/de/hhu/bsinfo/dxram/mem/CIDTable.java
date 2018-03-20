@@ -286,7 +286,12 @@ public final class CIDTable {
                 }
 
                 // get address to chunk from table 0
-                return readEntry(addressTable, index) & BITMASK_ADDRESS;
+                entry = readEntry(addressTable, index);
+                if(entry != FREE_ENTRY && entry != ZOMBIE_ENTRY) {
+                    return entry & BITMASK_ADDRESS;
+                } else {
+                    return 0;
+                }
             }
 
             level--;
