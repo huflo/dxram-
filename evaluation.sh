@@ -39,7 +39,7 @@ run_script() {
         $threads $operations $rounds
 }
 
-for branch in "master" "old_logic"; do
+for branch in "master" "strong_consitency"; do
     ${GIT} checkout ${branch} &> /dev/null
     $PWD/build-dxram-memory.sh &> /dev/null
     [ $? -ne 0 ] && exit 2
