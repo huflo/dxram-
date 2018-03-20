@@ -10,9 +10,13 @@ LIB_DIR=$PWD/lib
 BIN_DIR=$PWD/bin
 CONF_DIR=$PWD/config
 
+BINARY=${BIN_DIR}/dxram-memory-develop.jar
 
-BINARY=$BIN_DIR/dxram-memory-develop.jar
-if [ ! -e $BINARY ]; then
+if [ $# -lt 1 ]; then
+    echo RUN: $0 MAINCLASS [ARGUMENTS]
+fi
+
+if [ ! -e ${BINARY} ]; then
     echo "No jar found at $BINARY"
     echo "run the script: \"build_dxram_memory\""
     exit 1
@@ -22,10 +26,8 @@ LIBS=$LIB_DIR/slf4j-api-1.6.1.jar:$LIB_DIR/gson-2.7.jar:$LIB_DIR/log4j-api-2.7.j
 
 CLASSPATH=$LIBS:$BINARY
 
-MAIN_CLASS=de.hhu.bsinfo.DXRAMMemory
-
 java -ea\
-    -Dlog4j.configurationFile=$CONF_DIR/log4j.xml\
-    -Ddxram.config=$CONF_DIR/dxram.json\
-    -cp $CLASSPATH $MAIN_CLASS\
-    $@ #> /dev/null 2>&1
+    -Dlog4j.configurationFile=${CONF_DIR}/log4j.xml\
+    -Ddxram.config=${CONF_DIR}/dxram.json\
+    -cp ${CLASSPATH} $@ #> /dev/null 2>&1
+
