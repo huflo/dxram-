@@ -275,6 +275,8 @@ public class MemoryEvaluation {
             }
             measurementHelper.newRound();
         }
+
+        memory.disableReadLock(false);
     }
 
     /**

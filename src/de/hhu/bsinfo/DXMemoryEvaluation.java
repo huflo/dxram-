@@ -5,7 +5,6 @@ import de.hhu.bsinfo.dxram.mem.MemoryManagerComponent;
 
 /**
  * @author Florian Hucke (florian.hucke@hhu.de) on 19.03.18
- * @projectname dxram-memory
  */
 public class DXMemoryEvaluation {
     public static void main(String[] argv) {
@@ -36,11 +35,13 @@ public class DXMemoryEvaluation {
         evaluation.setRounds(rounds);
 
         for (double[] prob : probabilities) {
+            memory.disableReadLock(true);
+            evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
+
             for (boolean[] lock : locks) {
                 evaluation.setLocks(lock[0], lock[1]);
                 evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
             }
-
         }
 
         memory.shutdownComponent();

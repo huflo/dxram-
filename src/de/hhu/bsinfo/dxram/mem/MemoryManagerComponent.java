@@ -83,6 +83,7 @@ public final class MemoryManagerComponent {//<<{
     int BLOCK_SIZE;//<-
     String DUMP_FOLDER = "";
 
+    private boolean m_doReadLock = true;
     private boolean m_readLock = true;
     private boolean m_writeLock = true;
 
@@ -1750,10 +1751,12 @@ public final class MemoryManagerComponent {//<<{
      * setLocks.
      */
     void readLock(){
-        if(m_readLock)
-            m_lock.readLock().lock();
-        else
-            m_lock.writeLock().lock();
+        if(m_doReadLock) {
+            if (m_readLock)
+                m_lock.readLock().lock();
+            else
+                m_lock.writeLock().lock();
+        }
     }
 
     /**
@@ -1761,10 +1764,12 @@ public final class MemoryManagerComponent {//<<{
      * setLocks.
      */
     void readUnlock(){
-        if(m_readLock)
-            m_lock.readLock().unlock();
-        else
-            m_lock.writeLock().unlock();
+        if(m_doReadLock) {
+            if (m_readLock)
+                m_lock.readLock().unlock();
+            else
+                m_lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -1789,6 +1794,10 @@ public final class MemoryManagerComponent {//<<{
             m_lock.writeLock().unlock();
     }
 
+
+    public final void disableReadLock(final boolean disableReadLock) {
+        m_doReadLock = !disableReadLock;
+    }
 
     /**
      * Determine the type of access lock.
