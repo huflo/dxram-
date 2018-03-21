@@ -411,12 +411,14 @@ public final class CIDTable {
                 // Delete entry in the following table
                 addressTable = entry & BITMASK_ADDRESS;
             } else {
-                ret = readEntry(addressTable, index) & BITMASK_ADDRESS;
+                ret = readEntry(addressTable, index);
 
                 // already deleted
                 if (ret == FREE_ENTRY || ret == ZOMBIE_ENTRY) {
                     return 0;
                 }
+
+                ret &= BITMASK_ADDRESS;
 
                 // Delete the level 0 entry
                 // invalid + active address but deleted
