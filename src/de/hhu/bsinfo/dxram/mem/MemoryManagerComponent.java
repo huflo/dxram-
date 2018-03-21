@@ -84,6 +84,7 @@ public final class MemoryManagerComponent {//<<{
     String DUMP_FOLDER = "";
 
     private boolean m_doReadLock = true;
+    private boolean m_doWriteLock = true;
     private boolean m_readLock = true;
     private boolean m_writeLock = true;
 
@@ -696,6 +697,9 @@ public final class MemoryManagerComponent {//<<{
 
                 address = m_cidTable.get(p_chunkID);
                 if (address > 0) {
+                    if(readLockDisable() && address >= m_rawMemory.m_baseFreeBlockList) {
+                        return null;
+                    }
                     int chunkSize = m_rawMemory.getSizeBlock(address);
                     ret = new byte[chunkSize];
 
@@ -725,7 +729,7 @@ public final class MemoryManagerComponent {//<<{
 
         return ret;
     }
-
+    
     /**
      * Get the binary data of a chunk when the chunk size is unknown.
      * This is an access call and has to be locked using lockAccess().
@@ -1776,11 +1780,13 @@ public final class MemoryManagerComponent {//<<{
      * Write lock, this lock is switchable, with the method
      * setLocks.
      */
-    void writeLock(){
-        if(!m_writeLock)
-            m_lock.readLock().lock();
-        else
-            m_lock.writeLock().lock();
+    void writeLock() {
+        if(m_doWriteLock) {
+            if (!m_writeLock)
+                m_lock.readLock().lock();
+            else
+                m_lock.writeLock().lock();
+        }
     }
 
     /**
@@ -1788,15 +1794,25 @@ public final class MemoryManagerComponent {//<<{
      * setLocks.
      */
     void writeUnlock(){
-        if(!m_writeLock)
-            m_lock.readLock().unlock();
-        else
-            m_lock.writeLock().unlock();
+        if(m_doWriteLock) {
+            if (!m_writeLock)
+                m_lock.readLock().unlock();
+            else
+                m_lock.writeLock().unlock();
+        }
     }
 
 
     final void disableReadLock(final boolean disableReadLock) {
         m_doReadLock = !disableReadLock;
+    }
+
+    private boolean readLockDisable() {
+        return !m_doReadLock;
+    }
+
+    final void disableWriteLock(final boolean disableWriteLock) {
+        m_doWriteLock = !disableWriteLock;
     }
 
     /**

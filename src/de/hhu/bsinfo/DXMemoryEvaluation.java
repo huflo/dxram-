@@ -37,13 +37,19 @@ public class DXMemoryEvaluation {
         evaluation.setRounds(rounds);
 
         for (double[] prob : probabilities) {
+            if(prob[0] == 0.0 && prob[1] == 0.0) {
+                //test no locks
+                evaluation.setLocks(true, true, true, true);
+                evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
+            }
+
             //test weak consistency
-            evaluation.setLocks(true, true, true);
+            evaluation.setLocks(true, true, true, false);
             evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
 
             for (boolean[] lock : locks) {
                 //test strong consistency
-                evaluation.setLocks(lock[0], lock[1], false);
+                evaluation.setLocks(lock[0], lock[1], false, false);
                 evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
             }
         }

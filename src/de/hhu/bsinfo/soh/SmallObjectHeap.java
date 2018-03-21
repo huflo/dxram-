@@ -43,7 +43,7 @@ public final class SmallObjectHeap implements Importable, Exportable {
     private static final byte SINGLE_BYTE_MARKER = 0xF;
     // Attributes, have them accessible by the package to enable walking and analyzing the heap
     // don't modify or access them otherwise
-    long m_baseFreeBlockList;
+    public long m_baseFreeBlockList;
     int m_freeBlocksListSize = -1;
     long[] m_freeBlockListSizes;
     Storage m_memory;
