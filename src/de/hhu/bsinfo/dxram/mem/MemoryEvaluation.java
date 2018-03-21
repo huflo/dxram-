@@ -103,9 +103,14 @@ public class MemoryEvaluation {
     }
 
 
-    public void setLocks(final boolean readLock, final boolean writeLock) {
+    public void setLocks(final boolean readLock, final boolean writeLock, final boolean disableReadLock) {
         memory.setLocks(readLock, writeLock);
-        fileNameExtension = String.format("read_%s_-_write_%s", (readLock) ? "r":"w", (writeLock) ? "w":"r" );
+        memory.disableReadLock(disableReadLock);
+
+        if(disableReadLock)
+            fileNameExtension = String.format("write_%s_-_no_read_lock", (writeLock) ? "w":"r");
+        else
+            fileNameExtension = String.format("read_%s_-_write_%s", (readLock) ? "r":"w", (writeLock) ? "w":"r");
     }
 
     /**
@@ -186,8 +191,8 @@ public class MemoryEvaluation {
      * @param maxSize
      *          Maximum size of a newly created chunk
      */
-    public final void accessSimulation(final double createProbability, final double removeProbability,
-                                       final double writeProbability, final int minSize, final int maxSize) {
+    public final void accessSimulation(final double createProbability, final double removeProbability, final double writeProbability,
+                                       final int minSize, final int maxSize) {
 
         double removeLimit = createProbability + removeProbability;
         double writeLimit = removeLimit + writeProbability;
@@ -195,7 +200,8 @@ public class MemoryEvaluation {
         String baseFilename = String.format("%2.3f_%2.3f_%2.3f", createProbability, removeProbability, writeProbability);
 
         String desc = String.format("operations: %d, threads: %d, init chunks: %d, inti size: [min: %d ,max: %d], " +
-                "probabilities: [create: %2.3f, remove: %2.3f, read: %2.3f, write: %2.3f], delay:[min: %d, max: %d], size:[min: %d, max:%d]",
+                "probabilities: [create: %2.3f, remove: %2.3f, read: %2.3f, write: %2.3f], delay:[min: %d, max: %d], " +
+                "size:[min: %d, max:%d]",
                 operations, threads, initialChunks, initMinSize, initMaxSize, createProbability, removeProbability,
                 1-writeLimit, writeProbability, minDelay, maxDelay, minSize, maxSize);
 
@@ -275,7 +281,6 @@ public class MemoryEvaluation {
             }
             measurementHelper.newRound();
         }
-
         memory.disableReadLock(false);
     }
 

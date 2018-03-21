@@ -1795,7 +1795,7 @@ public final class MemoryManagerComponent {//<<{
     }
 
 
-    public final void disableReadLock(final boolean disableReadLock) {
+    final void disableReadLock(final boolean disableReadLock) {
         m_doReadLock = !disableReadLock;
     }
 

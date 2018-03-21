@@ -29,17 +29,21 @@ public class DXMemoryEvaluation {
 
 
         MemoryManagerComponent memory = new MemoryManagerComponent(nodeID, heapSize, (int)Math.pow(2,22));
-        MemoryEvaluation evaluation = new MemoryEvaluation(memory, "./eval/" + branch, initChunks, initMin, initMax);
+        MemoryEvaluation evaluation = new MemoryEvaluation(memory,
+                System.getProperty("user.home") + "/eval/" + branch,
+                initChunks, initMin, initMax);
         evaluation.setThreads(threads);
         evaluation.setOperations(operations);
         evaluation.setRounds(rounds);
 
         for (double[] prob : probabilities) {
-            memory.disableReadLock(true);
+            //test weak consistency
+            evaluation.setLocks(true, true, true);
             evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
 
             for (boolean[] lock : locks) {
-                evaluation.setLocks(lock[0], lock[1]);
+                //test strong consistency
+                evaluation.setLocks(lock[0], lock[1], false);
                 evaluation.accessSimulation(prob[0], prob[1], prob[2], 16, 2048);
             }
         }
